@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UppLoad — Upload a Real Video</title>
+<style>
+  :root{
+    --ink:#151313; --paper:#FBF7F0; --card:#FFFFFF;
+    --marigold:#E8722C; --indigo:#1F2A44; --line:#E7E0D4;
+    --muted:#7A7268; --chipbg:#F1ECE1;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Segoe UI', Arial, sans-serif; background:var(--paper); color:var(--ink); padding-bottom:40px;}
+  header{
+    display:flex; align-items:center; gap:16px; padding:12px 20px;
+    background:var(--card); border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:10;
+  }
+  .logo{font-size:22px; font-weight:800; color:var(--indigo);}
+  .logo span{color:var(--marigold);}
+  .api-status{margin-left:auto; font-size:11px; padding:5px 10px; border-radius:8px;}
+  .api-status.online{background:#E8F5E9; color:#2E7D32;}
+  .api-status.offline{background:#FDECEA; color:#C62828;}
+
+  .wrap{max-width:700px; margin:0 auto; padding:20px;}
+
+  .login-panel{
+    background:var(--card); border:1.5px solid var(--line); border-radius:14px;
+    padding:18px; margin-bottom:20px;
+  }
+  .login-panel h3{font-size:14px; margin-bottom:10px;}
+  .login-row{display:flex; gap:8px; flex-wrap:wrap; margin-bottom:8px;}
+  .login-row input{
+    flex:1; min-width:140px; padding:9px 12px; border:1.5px solid var(--line);
+    border-radius:8px; font-size:13px; font-family:inherit;
+  }
+  .login-row button{
+    background:var(--indigo); color:#fff; border:none; padding:9px 18px;
+    border-radius:8px; font-size:13px; font-weight:600; cursor:pointer;
+  }
+  .logged-in-badge{
+    display:none; background:#E8F5E9; color:#2E7D32; padding:8px 12px;
+    border-radius:8px; font-size:12.5px; font-weight:600;
+  }
+  .logged-in-badge.show{display:block;}
+
+  .upload-box{
+    background:var(--card); border:2px dashed var(--line); border-radius:16px;
+    padding:30px 20px; text-align:center; margin-bottom:20px;
+  }
+  .upload-box.dragover{border-color:var(--marigold); background:var(--chipbg);}
+  .upload-box svg{width:40px; height:40px; fill:var(--muted); margin-bottom:10px;}
+  .upload-box p{color:var(--muted); font-size:13.5px; margin-bottom:14px;}
+  #fileInput{display:none;}
+  .choose-btn{
+    background:var(--marigold); color:#fff; border:none; padding:11px 24px;
+    border-radius:22px; font-size:14px; font-weight:600; cursor:pointer;
+  }
+  .file-selected{
+    margin-top:14px; font-size:13px; color:var(--ink); font-weight:600;
+    display:none;
+  }
+  .file-selected.show{display:block;}
+
+  .title-field{margin-bottom:16px;}
+  .title-field label{display:block; font-size:12.5px; font-weight:600; margin-bottom:6px;}
+  .title-field input{
+    width:100%; padding:12px 14px; border:1.5px solid var(--line);
+    border-radius:10px; font-size:14px; font-family:inherit; outline:none;
+  }
+
+  .publish-btn{
+    width:100%; background:var(--indigo); color:#fff; border:none;
+    padding:13px; border-radius:12px; font-size:14.5px; font-weight:700;
+    cursor:pointer;
+  }
+  .publish-btn:disabled{opacity:0.5; cursor:not-allowed;}
+
+  .progress-wrap{display:none; margin-top:14px;}
+  .progress-wrap.show{display:block;}
+  .progress-bar{height:8px; background:var(--chipbg); border-radius:4px; overflow:hidden;}
+  .progress-fill{height:100%; background:var(--marigold); width:0%; transition:width 0.2s;}
+  .progress-text{font-size:12px; color:var(--muted); margin-top:6px;}
+
+  .result-box{
+    display:none; margin-top:24px; background:var(--card);
+    border-radius:14px; padding:16px; border:1.5px solid var(--line);
+  }
+  .result-box.show{display:block;}
+  .result-box h3{font-size:14px; margin-bottom:12px; color:#2E7D32;}
+  video{width:100%; border-radius:10px; background:#000;}
+  .result-title{font-size:14px; font-weight:700; margin-top:10px;}
+  .result-meta{font-size:12px; color:var(--muted); margin-top:4px;}
+</style>
+<script src="config.js"></script>
+</head>
+<body>
+<div style="display:flex; gap:14px; padding:10px 20px; background:#1F2A44; overflow-x:auto; white-space:nowrap;">
+  <a href="index.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Home</a>
+  <a href="shorts.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Shorts</a>
+  <a href="upload.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Upload</a>
+  <a href="subscriptions.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Subscriptions</a>
+  <a href="you.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">You</a>
+  <a href="login.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Sign In</a>
+</div>
+
+<header>
+  <div class="logo">UppLoad<span>.</span></div>
+  <div class="api-status" id="apiStatus">Checking...</div>
+</header>
+
+<div class="wrap">
+
+  <div class="login-panel">
+    <h3>Step 1 — Sign in first (needed to upload)</h3>
+    <div class="login-row">
+      <input type="text" id="firstName" placeholder="First name" value="Test">
+      <input type="text" id="lastName" placeholder="Last name" value="User">
+    </div>
+    <div class="login-row">
+      <input type="email" id="email" placeholder="Email (any, for this test)">
+      <button id="quickSignupBtn">Create Account & Sign In</button>
+    </div>
+    <div class="logged-in-badge" id="loggedInBadge"></div>
+  </div>
+
+  <div class="upload-box" id="uploadBox">
+    <svg viewBox="0 0 24 24"><path d="M12 2l5 5h-3v7h-4V7H7l5-5zM4 20v-4h2v2h12v-2h2v4H4z"/></svg>
+    <p>Drag a real video file here, or choose one from your device</p>
+    <button class="choose-btn" id="chooseBtn">Choose Video File</button>
+    <input type="file" id="fileInput" accept="video/*">
+    <div class="file-selected" id="fileSelected"></div>
+  </div>
+
+  <div class="title-field">
+    <label>Video Title</label>
+    <input type="text" id="videoTitle" placeholder="Give your video a title">
+  </div>
+
+  <button class="publish-btn" id="publishBtn" disabled>Sign in and choose a file first</button>
+
+  <div class="progress-wrap" id="progressWrap">
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+    <div class="progress-text" id="progressText">Uploading...</div>
+  </div>
+
+  <div class="result-box" id="resultBox">
+    <h3>✓ Uploaded successfully — this is your real video, playing from the server</h3>
+    <video id="resultVideo" controls></video>
+    <div class="result-title" id="resultTitle"></div>
+    <div class="result-meta" id="resultMeta"></div>
+  </div>
+
+</div>
+
+<script>
+  const API_BASE = CONFIG.API_BASE;
+  let myToken = null;
+  let selectedFile = null;
+
+  fetch(API_BASE + '/')
+    .then(r => r.json())
+    .then(() => { document.getElementById('apiStatus').textContent='● Connected'; document.getElementById('apiStatus').className='api-status online'; })
+    .catch(() => { document.getElementById('apiStatus').textContent='● Offline — start backend first'; document.getElementById('apiStatus').className='api-status offline'; });
+
+  document.getElementById('quickSignupBtn').addEventListener('click', async () => {
+    const firstName = document.getElementById('firstName').value.trim() || 'Test';
+    const lastName = document.getElementById('lastName').value.trim() || 'User';
+    let email = document.getElementById('email').value.trim();
+    if(!email) email = 'user_' + Date.now() + '@upload.com';
+
+    try {
+      let resp = await fetch(API_BASE + '/api/auth/signup', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({firstName, lastName, email, password:'password123'})
+      });
+      let data = await resp.json();
+      if(!resp.ok){
+        resp = await fetch(API_BASE + '/api/auth/login', {
+          method:'POST', headers:{'Content-Type':'application/json'},
+          body: JSON.stringify({email, password:'password123'})
+        });
+        data = await resp.json();
+      }
+      if(!resp.ok) throw new Error(data.error);
+
+      myToken = data.token;
+      const badge = document.getElementById('loggedInBadge');
+      badge.textContent = '✓ Signed in as ' + data.user.channelName;
+      badge.classList.add('show');
+      updatePublishState();
+    } catch(err){
+      alert('Sign in failed: ' + err.message);
+    }
+  });
+
+  const uploadBox = document.getElementById('uploadBox');
+  const fileInput = document.getElementById('fileInput');
+  const chooseBtn = document.getElementById('chooseBtn');
+  const fileSelected = document.getElementById('fileSelected');
+
+  chooseBtn.addEventListener('click', () => fileInput.click());
+  fileInput.addEventListener('change', (e) => {
+    if(e.target.files[0]) setFile(e.target.files[0]);
+  });
+  uploadBox.addEventListener('dragover', (e) => { e.preventDefault(); uploadBox.classList.add('dragover'); });
+  uploadBox.addEventListener('dragleave', () => uploadBox.classList.remove('dragover'));
+  uploadBox.addEventListener('drop', (e) => {
+    e.preventDefault();
+    uploadBox.classList.remove('dragover');
+    if(e.dataTransfer.files[0]) setFile(e.dataTransfer.files[0]);
+  });
+
+  function setFile(file){
+    selectedFile = file;
+    fileSelected.textContent = '✓ Selected: ' + file.name + ' (' + (file.size/1024/1024).toFixed(2) + ' MB)';
+    fileSelected.classList.add('show');
+    updatePublishState();
+  }
+
+  function updatePublishState(){
+    const btn = document.getElementById('publishBtn');
+    if(myToken && selectedFile){
+      btn.disabled = false;
+      btn.textContent = 'Publish Video';
+    } else if(!myToken){
+      btn.disabled = true;
+      btn.textContent = 'Sign in first';
+    } else {
+      btn.disabled = true;
+      btn.textContent = 'Choose a video file first';
+    }
+  }
+
+  document.getElementById('publishBtn').addEventListener('click', async () => {
+    const title = document.getElementById('videoTitle').value.trim() || selectedFile.name;
+    const progressWrap = document.getElementById('progressWrap');
+    const progressFill = document.getElementById('progressFill');
+    const progressText = document.getElementById('progressText');
+    progressWrap.classList.add('show');
+    progressFill.style.width = '10%';
+    progressText.textContent = 'Uploading your video...';
+
+    const form = new FormData();
+    form.append('title', title);
+    form.append('type', 'video');
+    form.append('video', selectedFile);
+
+    try {
+      const xhr = new XMLHttpRequest();
+      xhr.open('POST', API_BASE + '/api/videos/upload');
+      xhr.setRequestHeader('Authorization', 'Bearer ' + myToken);
+
+      xhr.upload.onprogress = (e) => {
+        if(e.lengthComputable){
+          const pct = Math.round((e.loaded / e.total) * 90) + 10;
+          progressFill.style.width = pct + '%';
+        }
+      };
+
+      xhr.onload = () => {
+        const data = JSON.parse(xhr.responseText);
+        if(xhr.status >= 200 && xhr.status < 300){
+          progressFill.style.width = '100%';
+          progressText.textContent = 'Done!';
+          showResult(data, title);
+        } else {
+          progressText.textContent = 'Error: ' + data.error;
+        }
+      };
+      xhr.onerror = () => { progressText.textContent = 'Upload failed — check backend connection.'; };
+      xhr.send(form);
+    } catch(err){
+      progressText.textContent = 'Error: ' + err.message;
+    }
+  });
+
+  function showResult(data, title){
+    const resultBox = document.getElementById('resultBox');
+    const video = document.getElementById('resultVideo');
+    video.src = API_BASE + '/uploads/' + data.filename;
+    document.getElementById('resultTitle').textContent = title;
+    document.getElementById('resultMeta').textContent = 'Video ID: ' + data.video.id + ' — stored on the server, served back to you live';
+    resultBox.classList.add('show');
+    resultBox.scrollIntoView({behavior:'smooth'});
+  }
+</script>
+
+</body>
+</html>

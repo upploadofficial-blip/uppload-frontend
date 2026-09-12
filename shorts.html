@@ -1,0 +1,297 @@
+<!DOCTYPE html>
+<html lang="hi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UppLoad — Shorts</title>
+<style>
+  :root{
+    --ink:#151313;
+    --paper:#0E0E10;
+    --marigold:#E8722C;
+    --indigo:#1F2A44;
+    --muted:#B9B4AA;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'Segoe UI', Arial, sans-serif;
+    background:#000;
+    color:#fff;
+    overflow:hidden;
+  }
+
+  .shorts-feed{
+    height:100vh;
+    max-width:480px;
+    margin:0 auto;
+    overflow-y:scroll;
+    scroll-snap-type:y mandatory;
+    scrollbar-width:none;
+    position:relative;
+  }
+  .shorts-feed::-webkit-scrollbar{display:none;}
+
+  .short-item{
+    height:100vh;
+    scroll-snap-align:start;
+    position:relative;
+    display:flex;
+    align-items:flex-end;
+    background-size:cover;
+  }
+  .short-item .bg{
+    position:absolute;
+    inset:0;
+    background:linear-gradient(160deg, var(--indigo), #3a4a72 60%, #1a1030);
+  }
+  .short-item:nth-child(2) .bg{background:linear-gradient(160deg, #6b2b1f, var(--marigold) 60%, #3a1a10);}
+  .short-item:nth-child(3) .bg{background:linear-gradient(160deg, #1f3d2a, #2f6b4a 60%, #0f2015);}
+  .short-item:nth-child(4) .bg{background:linear-gradient(160deg, #3a1f4d, #6b2f9e 60%, #150a20);}
+
+  .center-play{
+    position:absolute;
+    top:50%; left:50%;
+    transform:translate(-50%,-50%);
+    width:56px; height:56px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.15);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .center-play svg{width:22px; height:22px; fill:rgba(255,255,255,0.85); margin-left:3px;}
+
+  .short-content{
+    position:relative;
+    z-index:2;
+    width:100%;
+    display:flex;
+    justify-content:space-between;
+    align-items:flex-end;
+    padding:18px 14px 24px;
+  }
+
+  .short-info{flex:1; padding-right:12px;}
+  .short-channel{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    margin-bottom:10px;
+  }
+  .ch-dot{
+    width:32px; height:32px;
+    border-radius:50%;
+    background:var(--marigold);
+    flex-shrink:0;
+  }
+  .ch-name{font-size:14px; font-weight:700;}
+  .mini-sub{
+    border:1.5px solid #fff;
+    border-radius:12px;
+    padding:3px 12px;
+    font-size:11.5px;
+    font-weight:600;
+    margin-left:6px;
+    cursor:pointer;
+  }
+  .mini-sub.subscribed{
+    background:#fff;
+    color:#000;
+  }
+  .short-caption{
+    font-size:13.5px;
+    line-height:1.4;
+    margin-bottom:4px;
+  }
+  .short-sound{
+    font-size:11.5px;
+    color:var(--muted);
+    display:flex;
+    align-items:center;
+    gap:6px;
+  }
+
+  .short-actions{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:20px;
+  }
+  .s-action{
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    gap:4px;
+    cursor:pointer;
+  }
+  .s-icon{
+    width:44px; height:44px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.12);
+    display:flex;
+    align-items:center;
+    justify-content:center;
+  }
+  .s-icon svg{width:20px; height:20px; fill:#fff;}
+  .s-icon.selected{background:rgba(232,114,44,0.3);}
+  .s-icon.selected svg{fill:var(--marigold);}
+  .s-count{font-size:11px; color:var(--muted);}
+
+  /* Top bar */
+  .shorts-header{
+    position:absolute;
+    top:0; left:0; right:0;
+    z-index:5;
+    display:flex;
+    justify-content:center;
+    gap:24px;
+    padding:16px 0;
+    font-size:15px;
+    font-weight:700;
+  }
+  .shorts-header span{opacity:0.5;}
+  .shorts-header span.active{opacity:1; border-bottom:2px solid #fff; padding-bottom:6px;}
+</style>
+</head>
+<body>
+<div style="display:flex; gap:14px; padding:10px 20px; background:#1F2A44; overflow-x:auto; white-space:nowrap;">
+  <a href="index.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Home</a>
+  <a href="shorts.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Shorts</a>
+  <a href="upload.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Upload</a>
+  <a href="subscriptions.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Subscriptions</a>
+  <a href="you.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">You</a>
+  <a href="login.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Sign In</a>
+</div>
+
+<div class="shorts-feed" id="feed">
+
+  <div class="short-item">
+    <div class="bg"></div>
+    <div class="shorts-header"><span>Following</span><span class="active">Shorts</span></div>
+    <div class="center-play">
+      <svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4z"/></svg>
+    </div>
+    <div class="short-content">
+      <div class="short-info">
+        <div class="short-channel">
+          <div class="ch-dot"></div>
+          <span class="ch-name">@hasikefatke</span>
+          <span class="mini-sub">Subscribe</span>
+        </div>
+        <div class="short-caption">Office ka pehla din 😅 sabke sath hota hai ye #comedy</div>
+        <div class="short-sound">♪ Original Sound — Hasi Ke Fatke</div>
+      </div>
+      <div class="short-actions">
+        <div class="s-action like-action">
+          <div class="s-icon"><svg viewBox="0 0 24 24"><path d="M2 21h2a1 1 0 001-1v-9a1 1 0 00-1-1H2v11zM22.42 11.34A2 2 0 0020.83 10H15l.71-3.4c.06-.27.09-.55.09-.83a2.77 2.77 0 00-2.77-2.77 1 1 0 00-.92.6L9.3 9.5A2 2 0 007.5 10.7V19a2 2 0 002 2h8.28a2 2 0 001.95-1.57l1.66-7.14a2 2 0 00-.97-1.95z"/></svg></div>
+          <span class="s-count">18K</span>
+        </div>
+        <div class="s-action">
+          <div class="s-icon"><svg viewBox="0 0 24 24" style="transform:rotate(180deg)"><path d="M2 21h2a1 1 0 001-1v-9a1 1 0 00-1-1H2v11zM22.42 11.34A2 2 0 0020.83 10H15l.71-3.4c.06-.27.09-.55.09-.83a2.77 2.77 0 00-2.77-2.77 1 1 0 00-.92.6L9.3 9.5A2 2 0 007.5 10.7V19a2 2 0 002 2h8.28a2 2 0 001.95-1.57l1.66-7.14a2 2 0 00-.97-1.95z"/></svg></div>
+          <span class="s-count">Dislike</span>
+        </div>
+        <div class="s-action">
+          <div class="s-icon"><svg viewBox="0 0 24 24"><path d="M20 2H4a2 2 0 00-2 2v12a2 2 0 002 2h4l4 4 4-4h4a2 2 0 002-2V4a2 2 0 00-2-2z"/></svg></div>
+          <span class="s-count">340</span>
+        </div>
+        <div class="s-action">
+          <div class="s-icon"><svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 10-3-3c0 .24.04.47.09.7L7.04 9.81A3 3 0 105 15a3 3 0 003.04-.81l7.12 4.16c-.05.21-.08.43-.08.65a2.92 2.92 0 105.84 0 2.92 2.92 0 00-2.92-2.92z"/></svg></div>
+          <span class="s-count">Share</span>
+        </div>
+        <div class="ch-dot" style="width:34px; height:34px; border-radius:8px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="short-item">
+    <div class="bg"></div>
+    <div class="center-play">
+      <svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4z"/></svg>
+    </div>
+    <div class="short-content">
+      <div class="short-info">
+        <div class="short-channel">
+          <div class="ch-dot"></div>
+          <span class="ch-name">@foodierahul</span>
+          <span class="mini-sub">Subscribe</span>
+        </div>
+        <div class="short-caption">30 second mein Maggi banane ka trick 🍜 #shorts</div>
+        <div class="short-sound">♪ Trending Audio</div>
+      </div>
+      <div class="short-actions">
+        <div class="s-action like-action">
+          <div class="s-icon"><svg viewBox="0 0 24 24"><path d="M2 21h2a1 1 0 001-1v-9a1 1 0 00-1-1H2v11zM22.42 11.34A2 2 0 0020.83 10H15l.71-3.4c.06-.27.09-.55.09-.83a2.77 2.77 0 00-2.77-2.77 1 1 0 00-.92.6L9.3 9.5A2 2 0 007.5 10.7V19a2 2 0 002 2h8.28a2 2 0 001.95-1.57l1.66-7.14a2 2 0 00-.97-1.95z"/></svg></div>
+          <span class="s-count">92K</span>
+        </div>
+        <div class="s-action">
+          <div class="s-icon"><svg viewBox="0 0 24 24" style="transform:rotate(180deg)"><path d="M2 21h2a1 1 0 001-1v-9a1 1 0 00-1-1H2v11zM22.42 11.34A2 2 0 0020.83 10H15l.71-3.4c.06-.27.09-.55.09-.83a2.77 2.77 0 00-2.77-2.77 1 1 0 00-.92.6L9.3 9.5A2 2 0 007.5 10.7V19a2 2 0 002 2h8.28a2 2 0 001.95-1.57l1.66-7.14a2 2 0 00-.97-1.95z"/></svg></div>
+          <span class="s-count">Dislike</span>
+        </div>
+        <div class="s-action">
+          <div class="s-icon"><svg viewBox="0 0 24 24"><path d="M20 2H4a2 2 0 00-2 2v12a2 2 0 002 2h4l4 4 4-4h4a2 2 0 002-2V4a2 2 0 00-2-2z"/></svg></div>
+          <span class="s-count">1.2K</span>
+        </div>
+        <div class="s-action">
+          <div class="s-icon"><svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 10-3-3c0 .24.04.47.09.7L7.04 9.81A3 3 0 105 15a3 3 0 003.04-.81l7.12 4.16c-.05.21-.08.43-.08.65a2.92 2.92 0 105.84 0 2.92 2.92 0 00-2.92-2.92z"/></svg></div>
+          <span class="s-count">Share</span>
+        </div>
+        <div class="ch-dot" style="width:34px; height:34px; border-radius:8px;"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="short-item">
+    <div class="bg"></div>
+    <div class="center-play">
+      <svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4z"/></svg>
+    </div>
+    <div class="short-content">
+      <div class="short-info">
+        <div class="short-channel">
+          <div class="ch-dot"></div>
+          <span class="ch-name">@cricketfever</span>
+          <span class="mini-sub">Subscribe</span>
+        </div>
+        <div class="short-caption">Ye catch dekh ke maza aa gaya! 🔥 #cricket #ipl</div>
+        <div class="short-sound">♪ Stadium Roar</div>
+      </div>
+      <div class="short-actions">
+        <div class="s-action like-action">
+          <div class="s-icon"><svg viewBox="0 0 24 24"><path d="M2 21h2a1 1 0 001-1v-9a1 1 0 00-1-1H2v11zM22.42 11.34A2 2 0 0020.83 10H15l.71-3.4c.06-.27.09-.55.09-.83a2.77 2.77 0 00-2.77-2.77 1 1 0 00-.92.6L9.3 9.5A2 2 0 007.5 10.7V19a2 2 0 002 2h8.28a2 2 0 001.95-1.57l1.66-7.14a2 2 0 00-.97-1.95z"/></svg></div>
+          <span class="s-count">210K</span>
+        </div>
+        <div class="s-action">
+          <div class="s-icon"><svg viewBox="0 0 24 24" style="transform:rotate(180deg)"><path d="M2 21h2a1 1 0 001-1v-9a1 1 0 00-1-1H2v11zM22.42 11.34A2 2 0 0020.83 10H15l.71-3.4c.06-.27.09-.55.09-.83a2.77 2.77 0 00-2.77-2.77 1 1 0 00-.92.6L9.3 9.5A2 2 0 007.5 10.7V19a2 2 0 002 2h8.28a2 2 0 001.95-1.57l1.66-7.14a2 2 0 00-.97-1.95z"/></svg></div>
+          <span class="s-count">Dislike</span>
+        </div>
+        <div class="s-action">
+          <div class="s-icon"><svg viewBox="0 0 24 24"><path d="M20 2H4a2 2 0 00-2 2v12a2 2 0 002 2h4l4 4 4-4h4a2 2 0 002-2V4a2 2 0 00-2-2z"/></svg></div>
+          <span class="s-count">3.4K</span>
+        </div>
+        <div class="s-action">
+          <div class="s-icon"><svg viewBox="0 0 24 24"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81a3 3 0 10-3-3c0 .24.04.47.09.7L7.04 9.81A3 3 0 105 15a3 3 0 003.04-.81l7.12 4.16c-.05.21-.08.43-.08.65a2.92 2.92 0 105.84 0 2.92 2.92 0 00-2.92-2.92z"/></svg></div>
+          <span class="s-count">Share</span>
+        </div>
+        <div class="ch-dot" style="width:34px; height:34px; border-radius:8px;"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  document.querySelectorAll('.like-action .s-icon').forEach(icon => {
+    icon.addEventListener('click', () => {
+      icon.classList.toggle('selected');
+    });
+  });
+  document.querySelectorAll('.mini-sub').forEach(btn => {
+    btn.addEventListener('click', () => {
+      btn.classList.toggle('subscribed');
+      btn.textContent = btn.classList.contains('subscribed') ? 'Subscribed' : 'Subscribe';
+    });
+  });
+</script>
+
+</body>
+</html>

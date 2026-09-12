@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UppLoad — Video (Connected)</title>
+<style>
+  :root{
+    --ink:#151313; --paper:#FBF7F0; --card:#FFFFFF;
+    --marigold:#E8722C; --indigo:#1F2A44; --line:#E7E0D4;
+    --muted:#7A7268; --chipbg:#F1ECE1;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Segoe UI', Arial, sans-serif; background:var(--paper); color:var(--ink); padding-bottom:40px;}
+  header{
+    display:flex; align-items:center; gap:16px; padding:12px 20px;
+    background:var(--card); border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:30;
+  }
+  .logo{font-size:22px; font-weight:800; color:var(--indigo);}
+  .logo span{color:var(--marigold);}
+  .api-status{margin-left:auto; font-size:11px; padding:5px 10px; border-radius:8px;}
+  .api-status.online{background:#E8F5E9; color:#2E7D32;}
+  .api-status.offline{background:#FDECEA; color:#C62828;}
+
+  .wrap{max-width:900px; margin:0 auto; padding:0 20px;}
+
+  .test-panel{
+    background:var(--chipbg); border-radius:14px; padding:16px; margin:18px 0;
+  }
+  .test-panel h3{font-size:13.5px; margin-bottom:4px;}
+  .test-panel p{font-size:12px; color:var(--muted); margin-bottom:10px;}
+  .test-panel button{
+    background:var(--indigo); color:#fff; border:none; padding:8px 16px;
+    border-radius:8px; font-size:12.5px; font-weight:600; cursor:pointer;
+  }
+  .test-msg{font-size:12px; margin-top:8px;}
+  .test-msg.ok{color:#2E7D32;} .test-msg.err{color:#C62828;}
+
+  .player{
+    width:100%; aspect-ratio:16/9; border-radius:12px;
+    background:linear-gradient(135deg, var(--indigo), #3a4a72);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .play-circle{width:64px; height:64px; border-radius:50%; background:rgba(255,255,255,0.92); display:flex; align-items:center; justify-content:center;}
+  .play-circle svg{width:26px; height:26px; fill:var(--indigo); margin-left:3px;}
+
+  .title-block{padding:18px 0 10px;}
+  .v-title{font-size:18px; font-weight:700; line-height:1.4; margin-bottom:6px;}
+  .v-stats{font-size:13px; color:var(--muted);}
+
+  .channel-row{
+    display:flex; align-items:center; gap:12px; padding:14px 0;
+    border-bottom:1px solid var(--line); flex-wrap:wrap;
+  }
+  .channel-dot{width:44px; height:44px; border-radius:50%; background:var(--marigold); flex-shrink:0;}
+  .channel-info{flex:1; min-width:120px;}
+  .channel-name{font-size:15px; font-weight:700;}
+  .channel-subs{font-size:12.5px; color:var(--muted);}
+  .subscribe-btn{
+    background:var(--indigo); color:white; border:none; padding:9px 20px;
+    border-radius:20px; font-size:14px; font-weight:600; cursor:pointer;
+  }
+  .subscribe-btn.subscribed{background:var(--chipbg); color:var(--ink);}
+
+  .actions{display:flex; gap:10px; padding:14px 0; flex-wrap:wrap;}
+  .action-btn{
+    display:flex; align-items:center; gap:8px; background:var(--chipbg);
+    border:none; padding:9px 16px; border-radius:20px; font-size:13.5px;
+    font-weight:600; cursor:pointer; color:var(--ink);
+  }
+  .action-btn svg{width:17px; height:17px; fill:var(--ink);}
+  .like-dislike{display:flex; border-radius:20px; overflow:hidden; background:var(--chipbg);}
+  .like-dislike .action-btn{background:transparent; border-radius:0;}
+  .like-dislike .divider-v{width:1px; background:var(--line); align-self:stretch;}
+  .action-btn.selected{color:var(--marigold);}
+  .action-btn.selected svg{fill:var(--marigold);}
+
+  .comments-title{font-size:15px; font-weight:700; margin:20px 0 14px;}
+  .comment-input-row{display:flex; gap:10px; margin-bottom:20px;}
+  .comment-input-row input{
+    flex:1; padding:10px 14px; border:1.5px solid var(--line);
+    border-radius:20px; font-size:13.5px; outline:none; font-family:inherit;
+  }
+  .comment-input-row button{
+    background:var(--marigold); color:#fff; border:none; padding:9px 18px;
+    border-radius:18px; font-size:13px; font-weight:600; cursor:pointer;
+  }
+  .comment{display:flex; gap:12px; margin-bottom:16px;}
+  .comment .channel-dot{width:34px; height:34px;}
+  .comment-body{flex:1;}
+  .comment-name{font-size:13px; font-weight:700; margin-bottom:2px;}
+  .comment-text{font-size:13.5px; line-height:1.4;}
+  .comment-meta{font-size:11.5px; color:var(--muted); margin-top:3px;}
+  .empty-comments{color:var(--muted); font-size:13px; padding:10px 0;}
+</style>
+<script src="config.js"></script>
+</head>
+<body>
+<div style="display:flex; gap:14px; padding:10px 20px; background:#1F2A44; overflow-x:auto; white-space:nowrap;">
+  <a href="index.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Home</a>
+  <a href="shorts.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Shorts</a>
+  <a href="upload.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Upload</a>
+  <a href="subscriptions.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Subscriptions</a>
+  <a href="you.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">You</a>
+  <a href="login.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Sign In</a>
+</div>
+
+<header>
+  <div class="logo">UppLoad<span>.</span></div>
+  <div class="api-status" id="apiStatus">Checking...</div>
+</header>
+
+<div class="wrap">
+  <div class="test-panel">
+    <h3>How to test this page</h3>
+    <p>This page needs a real video ID from your database. Click below to create a fresh demo video + viewer account, then this page will load and connect to it for real.</p>
+    <button id="setupBtn">Create Demo Video & Load It</button>
+    <div class="test-msg" id="setupMsg"></div>
+  </div>
+
+  <div id="videoContent" style="display:none;">
+    <div class="player">
+      <div class="play-circle"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4z"/></svg></div>
+    </div>
+
+    <div class="title-block">
+      <div class="v-title" id="vTitle">—</div>
+      <div class="v-stats" id="vStats">—</div>
+    </div>
+
+    <div class="channel-row">
+      <div class="channel-dot"></div>
+      <div class="channel-info">
+        <div class="channel-name" id="channelName">—</div>
+        <div class="channel-subs">Real subscription data</div>
+      </div>
+      <button class="subscribe-btn" id="subBtn">Subscribe</button>
+    </div>
+
+    <div class="actions">
+      <div class="like-dislike">
+        <button class="action-btn" id="likeBtn">
+          <svg viewBox="0 0 24 24"><path d="M2 21h2a1 1 0 001-1v-9a1 1 0 00-1-1H2v11zM22.42 11.34A2 2 0 0020.83 10H15l.71-3.4c.06-.27.09-.55.09-.83a2.77 2.77 0 00-2.77-2.77 1 1 0 00-.92.6L9.3 9.5A2 2 0 007.5 10.7V19a2 2 0 002 2h8.28a2 2 0 001.95-1.57l1.66-7.14a2 2 0 00-.97-1.95z"/></svg>
+          <span id="likeCount">0</span>
+        </button>
+        <div class="divider-v"></div>
+        <button class="action-btn" id="dislikeBtn">
+          <svg viewBox="0 0 24 24" style="transform:rotate(180deg)"><path d="M2 21h2a1 1 0 001-1v-9a1 1 0 00-1-1H2v11zM22.42 11.34A2 2 0 0020.83 10H15l.71-3.4c.06-.27.09-.55.09-.83a2.77 2.77 0 00-2.77-2.77 1 1 0 00-.92.6L9.3 9.5A2 2 0 007.5 10.7V19a2 2 0 002 2h8.28a2 2 0 001.95-1.57l1.66-7.14a2 2 0 00-.97-1.95z"/></svg>
+          <span id="dislikeCount">0</span>
+        </button>
+      </div>
+    </div>
+
+    <div class="comments-title" id="commentsTitle">Comments</div>
+    <div class="comment-input-row">
+      <input type="text" id="commentInput" placeholder="Add a comment...">
+      <button id="commentBtn">Post</button>
+    </div>
+    <div id="commentsList"></div>
+  </div>
+</div>
+
+<script>
+  const API_BASE = CONFIG.API_BASE;
+  let currentVideoId = null;
+  let currentToken = null;
+  let subscribed = false;
+
+  fetch(API_BASE + '/')
+    .then(r => r.json())
+    .then(() => { document.getElementById('apiStatus').textContent = '● Connected'; document.getElementById('apiStatus').className='api-status online'; })
+    .catch(() => { document.getElementById('apiStatus').textContent = '● Offline'; document.getElementById('apiStatus').className='api-status offline'; });
+
+  document.getElementById('setupBtn').addEventListener('click', async () => {
+    const msg = document.getElementById('setupMsg');
+    msg.textContent = 'Setting up...';
+    msg.className = 'test-msg';
+    try {
+      // Create a creator + upload a video
+      const creatorEmail = 'creator_' + Date.now() + '@upload.com';
+      const creator = await (await fetch(API_BASE + '/api/auth/signup', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({firstName:'Priya', lastName:'Creator', email:creatorEmail, password:'pass123456'})
+      })).json();
+
+      const form = new FormData();
+      form.append('title', 'Cooking Tutorial — Live Demo');
+      form.append('type', 'video');
+      form.append('video', new Blob(['demo bytes']), 'demo.mp4');
+      const videoResp = await (await fetch(API_BASE + '/api/videos/upload', {
+        method:'POST', headers:{'Authorization':'Bearer ' + creator.token}, body: form
+      })).json();
+      currentVideoId = videoResp.video.id;
+
+      // Create a viewer account for you to interact as
+      const viewerEmail = 'viewer_' + Date.now() + '@upload.com';
+      const viewer = await (await fetch(API_BASE + '/api/auth/signup', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({firstName:'You', lastName:'Viewer', email:viewerEmail, password:'pass123456'})
+      })).json();
+      currentToken = viewer.token;
+
+      msg.textContent = '✓ Ready — video and account created for real.';
+      msg.className = 'test-msg ok';
+      document.getElementById('videoContent').style.display = 'block';
+      loadVideo();
+    } catch(err){
+      msg.textContent = 'Error: ' + err.message;
+      msg.className = 'test-msg err';
+    }
+  });
+
+  async function loadVideo(){
+    const v = await (await fetch(API_BASE + '/api/videos/' + currentVideoId)).json();
+    document.getElementById('vTitle').textContent = v.title;
+    document.getElementById('vStats').textContent = v.views + ' views • just now';
+    document.getElementById('channelName').textContent = v.channel_name;
+    document.getElementById('likeCount').textContent = v.likes;
+    document.getElementById('dislikeCount').textContent = v.dislikes;
+    loadComments();
+  }
+
+  async function loadComments(){
+    const data = await (await fetch(API_BASE + '/api/videos/' + currentVideoId + '/comments')).json();
+    const list = document.getElementById('commentsList');
+    document.getElementById('commentsTitle').textContent = data.comments.length + ' Comments';
+    if(data.comments.length === 0){
+      list.innerHTML = '<div class="empty-comments">No comments yet — be the first (really saved to the database).</div>';
+      return;
+    }
+    list.innerHTML = data.comments.map(c => `
+      <div class="comment">
+        <div class="channel-dot"></div>
+        <div class="comment-body">
+          <div class="comment-name">${c.channel_name}</div>
+          <div class="comment-text">${c.text}</div>
+          <div class="comment-meta">${new Date(c.created_at).toLocaleString()}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+
+  document.getElementById('likeBtn').addEventListener('click', () => react('like'));
+  document.getElementById('dislikeBtn').addEventListener('click', () => react('dislike'));
+
+  async function react(type){
+    if(!currentToken) return;
+    const data = await (await fetch(API_BASE + '/api/videos/' + currentVideoId + '/react', {
+      method:'POST',
+      headers:{'Content-Type':'application/json', 'Authorization':'Bearer ' + currentToken},
+      body: JSON.stringify({reaction:type})
+    })).json();
+    document.getElementById('likeCount').textContent = data.likes;
+    document.getElementById('dislikeCount').textContent = data.dislikes;
+    document.getElementById('likeBtn').classList.toggle('selected', type==='like');
+    document.getElementById('dislikeBtn').classList.toggle('selected', type==='dislike');
+  }
+
+  document.getElementById('subBtn').addEventListener('click', async () => {
+    if(!currentToken) return;
+    const btn = document.getElementById('subBtn');
+    if(!subscribed){
+      await fetch(API_BASE + '/api/videos/' + currentVideoId + '/subscribe', {
+        method:'POST', headers:{'Authorization':'Bearer ' + currentToken}
+      });
+      subscribed = true;
+      btn.textContent = 'Subscribed';
+      btn.classList.add('subscribed');
+    } else {
+      await fetch(API_BASE + '/api/videos/' + currentVideoId + '/subscribe', {
+        method:'DELETE', headers:{'Authorization':'Bearer ' + currentToken}
+      });
+      subscribed = false;
+      btn.textContent = 'Subscribe';
+      btn.classList.remove('subscribed');
+    }
+  });
+
+  document.getElementById('commentBtn').addEventListener('click', async () => {
+    const input = document.getElementById('commentInput');
+    if(!input.value.trim() || !currentToken) return;
+    await fetch(API_BASE + '/api/videos/' + currentVideoId + '/comments', {
+      method:'POST',
+      headers:{'Content-Type':'application/json', 'Authorization':'Bearer ' + currentToken},
+      body: JSON.stringify({text: input.value.trim()})
+    });
+    input.value = '';
+    loadComments();
+  });
+</script>
+
+</body>
+</html>

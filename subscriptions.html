@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UppLoad — Subscriptions (Connected)</title>
+<style>
+  :root{
+    --ink:#151313; --paper:#FBF7F0; --card:#FFFFFF;
+    --marigold:#E8722C; --indigo:#1F2A44; --line:#E7E0D4;
+    --muted:#7A7268; --chipbg:#F1ECE1;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:'Segoe UI', Arial, sans-serif; background:var(--paper); color:var(--ink); padding-bottom:40px;}
+  header{
+    display:flex; align-items:center; gap:16px; padding:14px 20px;
+    background:var(--card); border-bottom:1px solid var(--line);
+    position:sticky; top:0; z-index:10;
+  }
+  .logo{font-size:22px; font-weight:800; color:var(--indigo);}
+  .logo span{color:var(--marigold);}
+  .page-title{font-size:16px; font-weight:700; margin-left:4px;}
+  .api-status{margin-left:auto; font-size:11px; padding:5px 10px; border-radius:8px;}
+  .api-status.online{background:#E8F5E9; color:#2E7D32;}
+  .api-status.offline{background:#FDECEA; color:#C62828;}
+
+  .wrap{max-width:900px; margin:0 auto; padding:0 20px;}
+
+  .test-panel{background:var(--chipbg); border-radius:14px; padding:16px; margin:18px 0;}
+  .test-panel h3{font-size:13.5px; margin-bottom:4px;}
+  .test-panel p{font-size:12px; color:var(--muted); margin-bottom:10px;}
+  .test-panel button{
+    background:var(--indigo); color:#fff; border:none; padding:8px 16px;
+    border-radius:8px; font-size:12.5px; font-weight:600; cursor:pointer; margin-right:8px;
+  }
+  .test-msg{font-size:12px; margin-top:8px;}
+  .test-msg.ok{color:#2E7D32;} .test-msg.err{color:#C62828;}
+
+  .sub-video{display:flex; gap:14px; padding:14px 0; border-bottom:1px solid var(--line);}
+  .sub-thumb{
+    width:160px; aspect-ratio:16/9; border-radius:10px;
+    background:linear-gradient(135deg, var(--indigo), #3a4a72); flex-shrink:0;
+  }
+  .sub-info{flex:1; min-width:0;}
+  .sub-title{font-size:14px; font-weight:600; margin-bottom:5px;}
+  .sub-channel{font-size:12.5px; color:var(--muted); margin-bottom:2px;}
+  .sub-meta{font-size:12px; color:var(--muted);}
+  .empty-state{text-align:center; padding:50px 20px; color:var(--muted); font-size:13.5px;}
+</style>
+<script src="config.js"></script>
+</head>
+<body>
+<div style="display:flex; gap:14px; padding:10px 20px; background:#1F2A44; overflow-x:auto; white-space:nowrap;">
+  <a href="index.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Home</a>
+  <a href="shorts.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Shorts</a>
+  <a href="upload.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Upload</a>
+  <a href="subscriptions.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Subscriptions</a>
+  <a href="you.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">You</a>
+  <a href="login.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Sign In</a>
+</div>
+
+<header>
+  <div class="logo">UppLoad<span>.</span></div>
+  <div class="page-title">Subscriptions</div>
+  <div class="api-status" id="apiStatus">Checking...</div>
+</header>
+
+<div class="wrap">
+  <div class="test-panel">
+    <h3>Test with real data</h3>
+    <p>This creates a real channel + video, subscribes your test account to it, then loads this exact feed from the database.</p>
+    <button id="setupBtn">Subscribe to a Demo Channel</button>
+    <div class="test-msg" id="setupMsg"></div>
+  </div>
+
+  <div id="feedContainer"></div>
+</div>
+
+<script>
+  const API_BASE = CONFIG.API_BASE;
+  let myToken = null;
+
+  fetch(API_BASE + '/')
+    .then(r => r.json())
+    .then(() => { document.getElementById('apiStatus').textContent='● Connected'; document.getElementById('apiStatus').className='api-status online'; })
+    .catch(() => { document.getElementById('apiStatus').textContent='● Offline'; document.getElementById('apiStatus').className='api-status offline'; });
+
+  document.getElementById('setupBtn').addEventListener('click', async () => {
+    const msg = document.getElementById('setupMsg');
+    msg.textContent = 'Setting up...';
+    try {
+      const creator = await (await fetch(API_BASE + '/api/auth/signup', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({firstName:'Cricket', lastName:'Fever', email:'cf_'+Date.now()+'@upload.com', password:'pass123456'})
+      })).json();
+
+      const form = new FormData();
+      form.append('title', 'IPL Highlights — Last Over Thriller');
+      form.append('type', 'video');
+      form.append('video', new Blob(['demo']), 'demo.mp4');
+      await fetch(API_BASE + '/api/videos/upload', {
+        method:'POST', headers:{'Authorization':'Bearer '+creator.token}, body: form
+      });
+      const video2 = await fetch(API_BASE + '/api/videos/upload', {
+        method:'POST', headers:{'Authorization':'Bearer '+creator.token},
+        body: (() => { const f = new FormData(); f.append('title','Best Catch Compilation 2026'); f.append('type','video'); f.append('video', new Blob(['demo']), 'demo2.mp4'); return f; })()
+      });
+      const video2Data = await video2.json();
+
+      const me = await (await fetch(API_BASE + '/api/auth/signup', {
+        method:'POST', headers:{'Content-Type':'application/json'},
+        body: JSON.stringify({firstName:'You', lastName:'Subscriber', email:'sub_'+Date.now()+'@upload.com', password:'pass123456'})
+      })).json();
+      myToken = me.token;
+
+      await fetch(API_BASE + '/api/videos/' + video2Data.video.id + '/subscribe', {
+        method:'POST', headers:{'Authorization':'Bearer '+myToken}
+      });
+
+      msg.textContent = '✓ Subscribed for real — loading your subscription feed below.';
+      msg.className = 'test-msg ok';
+      loadFeed();
+    } catch(err){
+      msg.textContent = 'Error: ' + err.message;
+      msg.className = 'test-msg err';
+    }
+  });
+
+  async function loadFeed(){
+    const container = document.getElementById('feedContainer');
+    if(!myToken){
+      container.innerHTML = '<div class="empty-state">Click the button above first to create a test account.</div>';
+      return;
+    }
+    const data = await (await fetch(API_BASE + '/api/videos/feed/subscriptions', {
+      headers:{'Authorization':'Bearer '+myToken}
+    })).json();
+
+    if(data.videos.length === 0){
+      container.innerHTML = '<div class="empty-state">No videos from subscribed channels yet.</div>';
+      return;
+    }
+    container.innerHTML = data.videos.map(v => `
+      <div class="sub-video">
+        <div class="sub-thumb"></div>
+        <div class="sub-info">
+          <div class="sub-title">${v.title}</div>
+          <div class="sub-channel">${v.channel_name}</div>
+          <div class="sub-meta">${v.views} views • ${new Date(v.created_at).toLocaleString()}</div>
+        </div>
+      </div>
+    `).join('');
+  }
+</script>
+
+</body>
+</html>

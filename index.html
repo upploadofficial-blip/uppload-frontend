@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>UppLoad — Home (Connected)</title>
+<style>
+  :root{
+    --ink:#151313;
+    --paper:#FBF7F0;
+    --card:#FFFFFF;
+    --marigold:#E8722C;
+    --indigo:#1F2A44;
+    --line:#E7E0D4;
+    --muted:#7A7268;
+    --chipbg:#F1ECE1;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:'Segoe UI', Arial, sans-serif;
+    background:var(--paper);
+    color:var(--ink);
+    padding-bottom:90px;
+  }
+  header{
+    display:flex;
+    align-items:center;
+    gap:16px;
+    padding:12px 20px;
+    background:var(--card);
+    border-bottom:1px solid var(--line);
+    position:sticky;
+    top:0;
+    z-index:10;
+  }
+  .logo{font-size:22px; font-weight:800; color:var(--indigo);}
+  .logo span{color:var(--marigold);}
+  .api-status{
+    margin-left:auto;
+    font-size:11px;
+    padding:5px 10px;
+    border-radius:8px;
+  }
+  .api-status.online{background:#E8F5E9; color:#2E7D32;}
+  .api-status.offline{background:#FDECEA; color:#C62828;}
+
+  main{padding:20px; max-width:900px; margin:0 auto;}
+
+  .test-panel{
+    background:var(--chipbg);
+    border-radius:14px;
+    padding:16px;
+    margin-bottom:22px;
+  }
+  .test-panel h3{font-size:14px; margin-bottom:4px;}
+  .test-panel p{font-size:12.5px; color:var(--muted); margin-bottom:12px;}
+  .test-row{display:flex; gap:8px; flex-wrap:wrap;}
+  .test-row input{
+    flex:1;
+    min-width:150px;
+    padding:9px 12px;
+    border:1.5px solid var(--line);
+    border-radius:8px;
+    font-size:13px;
+    font-family:inherit;
+  }
+  .test-row button{
+    background:var(--marigold);
+    color:#fff;
+    border:none;
+    padding:9px 18px;
+    border-radius:8px;
+    font-size:13px;
+    font-weight:600;
+    cursor:pointer;
+  }
+  .test-msg{font-size:12px; margin-top:8px;}
+  .test-msg.ok{color:#2E7D32;}
+  .test-msg.err{color:#C62828;}
+
+  .feed-title{font-size:15px; font-weight:700; margin-bottom:14px;}
+  .empty-state{
+    text-align:center;
+    padding:50px 20px;
+    color:var(--muted);
+  }
+  .empty-state svg{width:48px; height:48px; fill:var(--line); margin-bottom:12px;}
+  .empty-state p{font-size:13.5px;}
+
+  .grid{
+    display:grid;
+    grid-template-columns:repeat(auto-fill, minmax(240px, 1fr));
+    gap:20px;
+  }
+  .video-card{cursor:pointer;}
+  .thumb{
+    width:100%;
+    aspect-ratio:16/9;
+    border-radius:12px;
+    background:linear-gradient(135deg, var(--indigo), #3a4a72);
+    position:relative;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .thumb::after{content:""; position:absolute; width:40px; height:40px; border-radius:50%; background:rgba(255,255,255,0.9);}
+  .thumb::before{content:"▶"; position:absolute; color:var(--indigo); font-size:14px; z-index:2; padding-left:3px;}
+  .video-meta{display:flex; gap:10px; margin-top:10px;}
+  .channel-dot{width:34px; height:34px; border-radius:50%; background:var(--marigold); flex-shrink:0;}
+  .video-title{font-size:14px; font-weight:600; margin-bottom:3px;}
+  .video-sub{font-size:12px; color:var(--muted);}
+
+  .bottom-nav{
+    position:fixed;
+    bottom:0; left:0; right:0;
+    background:var(--card);
+    border-top:1px solid var(--line);
+    display:flex;
+    justify-content:space-around;
+    align-items:center;
+    padding:8px 0 10px;
+    max-width:1200px;
+    margin:0 auto;
+  }
+  .nav-btn{display:flex; flex-direction:column; align-items:center; gap:3px; color:var(--muted); font-size:11px; flex:1;}
+  .nav-btn.active{color:var(--marigold); font-weight:600;}
+  .nav-icon{width:22px; height:22px; fill:currentColor; opacity:0.4;}
+  .nav-btn.active .nav-icon{opacity:1;}
+</style>
+<script src="config.js"></script>
+</head>
+<body>
+<div style="display:flex; gap:14px; padding:10px 20px; background:#1F2A44; overflow-x:auto; white-space:nowrap;">
+  <a href="index.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Home</a>
+  <a href="shorts.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Shorts</a>
+  <a href="upload.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Upload</a>
+  <a href="subscriptions.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Subscriptions</a>
+  <a href="you.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">You</a>
+  <a href="login.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Sign In</a>
+</div>
+
+<header>
+  <div class="logo">UppLoad<span>.</span></div>
+  <div class="api-status" id="apiStatus">Checking backend...</div>
+</header>
+
+<main>
+  <div class="test-panel">
+    <h3>Test the real connection</h3>
+    <p>This form calls your backend's actual upload endpoint. Type a title and click Upload — it will really save to the database, and you'll see it appear in the feed below instantly.</p>
+    <div class="test-row">
+      <input type="text" id="testTitle" placeholder="e.g. My First Real Video">
+      <button id="testUploadBtn">Simulate Upload</button>
+    </div>
+    <div class="test-msg" id="testMsg"></div>
+  </div>
+
+  <div class="feed-title">Home Feed (live from database)</div>
+  <div id="feedContainer"></div>
+</main>
+
+<nav class="bottom-nav">
+  <div class="nav-btn active">
+    <svg class="nav-icon" viewBox="0 0 24 24"><path d="M12 3l9 8h-3v9h-5v-6H11v6H6v-9H3l9-8z"/></svg>
+    Home
+  </div>
+  <div class="nav-btn">
+    <svg class="nav-icon" viewBox="0 0 24 24"><path d="M5 4l14 8-14 8V4z"/></svg>
+    Shorts
+  </div>
+  <div class="nav-btn">
+    <svg class="nav-icon" viewBox="0 0 24 24" fill="none"><circle cx="12" cy="12" r="11" fill="#E8722C"/><path d="M12 7v10M7 12h10" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+  </div>
+  <div class="nav-btn">
+    <svg class="nav-icon" viewBox="0 0 24 24"><path d="M4 6h16v2H4zM4 11h16v2H4zM4 16h16v2H4z"/></svg>
+    Subscriptions
+  </div>
+  <div class="nav-btn">
+    <svg class="nav-icon" viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M4 20c0-4 3.5-6 8-6s8 2 8 6"/></svg>
+    You
+  </div>
+</nav>
+
+<script>
+  const API_BASE = CONFIG.API_BASE;
+  const apiStatus = document.getElementById('apiStatus');
+  const feedContainer = document.getElementById('feedContainer');
+
+  function checkBackend(){
+    fetch(API_BASE + '/')
+      .then(r => r.json())
+      .then(() => {
+        apiStatus.textContent = '● Connected';
+        apiStatus.className = 'api-status online';
+      })
+      .catch(() => {
+        apiStatus.textContent = '● Backend offline';
+        apiStatus.className = 'api-status offline';
+      });
+  }
+
+  function loadFeed(){
+    fetch(API_BASE + '/api/videos')
+      .then(r => r.json())
+      .then(data => {
+        renderFeed(data.videos || []);
+      })
+      .catch(() => {
+        feedContainer.innerHTML = `<div class="empty-state">
+          <p>Could not load videos — make sure the backend is running (npm start).</p>
+        </div>`;
+      });
+  }
+
+  function renderFeed(videos){
+    if(videos.length === 0){
+      feedContainer.innerHTML = `<div class="empty-state">
+        <svg viewBox="0 0 24 24"><path d="M17 10.5V7a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h12a1 1 0 001-1v-3.5l4 4v-11l-4 4z"/></svg>
+        <p>No videos yet. Try the test upload above — this feed updates from the real database.</p>
+      </div>`;
+      return;
+    }
+    const grid = document.createElement('div');
+    grid.className = 'grid';
+    videos.forEach(v => {
+      const card = document.createElement('div');
+      card.className = 'video-card';
+      const timeAgo = new Date(v.created_at).toLocaleString();
+      card.innerHTML = `
+        <div class="thumb"></div>
+        <div class="video-meta">
+          <div class="channel-dot"></div>
+          <div>
+            <div class="video-title">${v.title}</div>
+            <div class="video-sub">${v.channel_name} • ${v.views} views • ${timeAgo}</div>
+          </div>
+        </div>
+      `;
+      grid.appendChild(card);
+    });
+    feedContainer.innerHTML = '';
+    feedContainer.appendChild(grid);
+  }
+
+  // Test upload — creates a throwaway test account each time so you don't
+  // need to sign in manually to prove the pipeline works end to end.
+  document.getElementById('testUploadBtn').addEventListener('click', async () => {
+    const title = document.getElementById('testTitle').value.trim();
+    const msg = document.getElementById('testMsg');
+    if(!title){
+      msg.textContent = 'Please enter a title first.';
+      msg.className = 'test-msg err';
+      return;
+    }
+    msg.textContent = 'Uploading...';
+    msg.className = 'test-msg';
+
+    try{
+      const testEmail = 'demo_' + Date.now() + '@upload.com';
+      const signup = await fetch(API_BASE + '/api/auth/signup', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ firstName:'Demo', lastName:'User', email:testEmail, password:'demopass123' })
+      });
+      const signupData = await signup.json();
+      if(!signup.ok) throw new Error(signupData.error);
+
+      const form = new FormData();
+      form.append('title', title);
+      form.append('type', 'video');
+      form.append('video', new Blob(['fake video bytes for demo'], {type:'video/mp4'}), 'demo.mp4');
+
+      const upload = await fetch(API_BASE + '/api/videos/upload', {
+        method: 'POST',
+        headers: { 'Authorization': 'Bearer ' + signupData.token },
+        body: form
+      });
+      const uploadData = await upload.json();
+      if(!upload.ok) throw new Error(uploadData.error);
+
+      msg.textContent = '✓ Uploaded successfully — check the feed below.';
+      msg.className = 'test-msg ok';
+      document.getElementById('testTitle').value = '';
+      loadFeed();
+    } catch(err){
+      msg.textContent = 'Error: ' + err.message;
+      msg.className = 'test-msg err';
+    }
+  });
+
+  checkBackend();
+  loadFeed();
+</script>
+
+</body>
+</html>
