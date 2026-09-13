@@ -7,5 +7,5 @@
 // page in this frontend will automatically use it.
 
 const CONFIG = {
-  API_BASE: 'http://localhost:3000'
+    API_BASE: 'https://uppload-backend.onrender.com'
 };
