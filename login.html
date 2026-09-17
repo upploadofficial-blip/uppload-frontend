@@ -153,9 +153,10 @@
   }
 </style>
 <script src="config.js"></script>
+<script src="auth.js"></script>
 </head>
 <body>
-<div style="display:flex; gap:14px; padding:10px 20px; background:#1F2A44; overflow-x:auto; white-space:nowrap;">
+<div class="top-nav" style="display:flex; gap:14px; padding:10px 20px; background:#1F2A44; overflow-x:auto; white-space:nowrap;">
   <a href="index.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Home</a>
   <a href="shorts.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Shorts</a>
   <a href="upload.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Upload</a>
@@ -216,6 +217,11 @@
 <script>
   // ⚠️ This points to your local backend. If you deploy the backend online,
   // change this to your live server's URL (e.g. https://your-app.onrender.com)
+  // If already signed in, skip the login form entirely
+  if (Auth.isLoggedIn()) {
+    window.location.href = 'index.html';
+  }
+
   const API_BASE = CONFIG.API_BASE;
 
   const apiStatus = document.getElementById('apiStatus');
@@ -309,13 +315,15 @@
         return;
       }
 
-      // Real success — save the real token from the real backend
-      localStorage.removeItem('uppload_token'); // not used across pages in this demo, just showing the flow
+      // Real success — save the session so every other page remembers this login
+      Auth.saveSession(data.token, data.user);
       document.getElementById('authCard').style.display = 'none';
       document.getElementById('successTitle').textContent = data.message;
-      document.getElementById('successSub').textContent = `Signed in as ${data.user.channelName} (${data.user.email})`;
-      document.getElementById('tokenBox').textContent = 'Real session token from the server: ' + data.token;
+      document.getElementById('successSub').textContent = `Signed in as ${data.user.channelName} (${data.user.email}). Taking you home...`;
+      document.getElementById('tokenBox').style.display = 'none';
       document.getElementById('successScreen').classList.add('show');
+      setTimeout(() => { window.location.href = 'index.html'; }, 1200);
+
 
     } catch(err){
       showError('Could not reach the backend. Is it running on ' + API_BASE + '?');

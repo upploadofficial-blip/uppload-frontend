@@ -94,9 +94,10 @@
   .result-meta{font-size:12px; color:var(--muted); margin-top:4px;}
 </style>
 <script src="config.js"></script>
+<script src="auth.js"></script>
 </head>
 <body>
-<div style="display:flex; gap:14px; padding:10px 20px; background:#1F2A44; overflow-x:auto; white-space:nowrap;">
+<div class="top-nav" style="display:flex; gap:14px; padding:10px 20px; background:#1F2A44; overflow-x:auto; white-space:nowrap;">
   <a href="index.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Home</a>
   <a href="shorts.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Shorts</a>
   <a href="upload.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Upload</a>
@@ -112,18 +113,13 @@
 
 <div class="wrap">
 
-  <div class="login-panel">
-    <h3>Step 1 — Sign in first (needed to upload)</h3>
-    <div class="login-row">
-      <input type="text" id="firstName" placeholder="First name" value="Test">
-      <input type="text" id="lastName" placeholder="Last name" value="User">
-    </div>
-    <div class="login-row">
-      <input type="email" id="email" placeholder="Email (any, for this test)">
-      <button id="quickSignupBtn">Create Account & Sign In</button>
-    </div>
-    <div class="logged-in-badge" id="loggedInBadge"></div>
+  <div class="login-panel" id="notSignedInPanel">
+    <h3>You need to sign in first</h3>
+    <p style="font-size:13px; color:var(--muted); margin-bottom:10px;">Uploading requires an account so your videos are linked to your channel.</p>
+    <a href="login.html" style="display:inline-block; background:var(--indigo); color:#fff; padding:9px 18px; border-radius:8px; font-size:13px; font-weight:600; text-decoration:none;">Sign In / Create Account</a>
   </div>
+
+  <div class="logged-in-badge show" id="loggedInBadge" style="display:none;"></div>
 
   <div class="upload-box" id="uploadBox">
     <svg viewBox="0 0 24 24"><path d="M12 2l5 5h-3v7h-4V7H7l5-5zM4 20v-4h2v2h12v-2h2v4H4z"/></svg>
@@ -132,6 +128,7 @@
     <input type="file" id="fileInput" accept="video/*">
     <div class="file-selected" id="fileSelected"></div>
   </div>
+
 
   <div class="title-field">
     <label>Video Title</label>
@@ -156,7 +153,7 @@
 
 <script>
   const API_BASE = CONFIG.API_BASE;
-  let myToken = null;
+  let myToken = Auth.getToken();
   let selectedFile = null;
 
   fetch(API_BASE + '/')
@@ -164,36 +161,13 @@
     .then(() => { document.getElementById('apiStatus').textContent='● Connected'; document.getElementById('apiStatus').className='api-status online'; })
     .catch(() => { document.getElementById('apiStatus').textContent='● Offline — start backend first'; document.getElementById('apiStatus').className='api-status offline'; });
 
-  document.getElementById('quickSignupBtn').addEventListener('click', async () => {
-    const firstName = document.getElementById('firstName').value.trim() || 'Test';
-    const lastName = document.getElementById('lastName').value.trim() || 'User';
-    let email = document.getElementById('email').value.trim();
-    if(!email) email = 'user_' + Date.now() + '@upload.com';
-
-    try {
-      let resp = await fetch(API_BASE + '/api/auth/signup', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({firstName, lastName, email, password:'password123'})
-      });
-      let data = await resp.json();
-      if(!resp.ok){
-        resp = await fetch(API_BASE + '/api/auth/login', {
-          method:'POST', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({email, password:'password123'})
-        });
-        data = await resp.json();
-      }
-      if(!resp.ok) throw new Error(data.error);
-
-      myToken = data.token;
-      const badge = document.getElementById('loggedInBadge');
-      badge.textContent = '✓ Signed in as ' + data.user.channelName;
-      badge.classList.add('show');
-      updatePublishState();
-    } catch(err){
-      alert('Sign in failed: ' + err.message);
-    }
-  });
+  if (Auth.isLoggedIn()) {
+    const user = Auth.getUser();
+    document.getElementById('notSignedInPanel').style.display = 'none';
+    const badge = document.getElementById('loggedInBadge');
+    badge.textContent = '✓ Signed in as ' + user.channelName;
+    badge.style.display = 'block';
+  }
 
   const uploadBox = document.getElementById('uploadBox');
   const fileInput = document.getElementById('fileInput');

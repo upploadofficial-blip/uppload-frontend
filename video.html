@@ -95,9 +95,10 @@
   .empty-comments{color:var(--muted); font-size:13px; padding:10px 0;}
 </style>
 <script src="config.js"></script>
+<script src="auth.js"></script>
 </head>
 <body>
-<div style="display:flex; gap:14px; padding:10px 20px; background:#1F2A44; overflow-x:auto; white-space:nowrap;">
+<div class="top-nav" style="display:flex; gap:14px; padding:10px 20px; background:#1F2A44; overflow-x:auto; white-space:nowrap;">
   <a href="index.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Home</a>
   <a href="shorts.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Shorts</a>
   <a href="upload.html" style="color:#fff; text-decoration:none; font-size:12.5px; font-weight:600;">Upload</a>
@@ -112,13 +113,6 @@
 </header>
 
 <div class="wrap">
-  <div class="test-panel">
-    <h3>How to test this page</h3>
-    <p>This page needs a real video ID from your database. Click below to create a fresh demo video + viewer account, then this page will load and connect to it for real.</p>
-    <button id="setupBtn">Create Demo Video & Load It</button>
-    <div class="test-msg" id="setupMsg"></div>
-  </div>
-
   <div id="videoContent" style="display:none;">
     <div class="player">
       <div class="play-circle"><svg viewBox="0 0 24 24"><path d="M6 4l14 8-14 8V4z"/></svg></div>
@@ -153,18 +147,27 @@
     </div>
 
     <div class="comments-title" id="commentsTitle">Comments</div>
-    <div class="comment-input-row">
+    <div id="signInPrompt" style="display:none; background:var(--chipbg); padding:12px 16px; border-radius:10px; margin-bottom:16px; font-size:13px;">
+      <a href="login.html" style="color:var(--indigo); font-weight:600;">Sign in</a> to like, subscribe, or comment.
+    </div>
+    <div class="comment-input-row" id="commentInputRow">
       <input type="text" id="commentInput" placeholder="Add a comment...">
       <button id="commentBtn">Post</button>
     </div>
     <div id="commentsList"></div>
   </div>
+
+  <div id="notFoundMsg" style="display:none; text-align:center; padding:60px 20px; color:var(--muted);">
+    <p>This video doesn't exist, or no video was specified.</p>
+    <p style="margin-top:8px;"><a href="index.html" style="color:var(--indigo); font-weight:600;">← Back to Home</a></p>
+  </div>
 </div>
 
 <script>
   const API_BASE = CONFIG.API_BASE;
-  let currentVideoId = null;
-  let currentToken = null;
+  const urlParams = new URLSearchParams(window.location.search);
+  let currentVideoId = urlParams.get('id');
+  let currentToken = Auth.getToken();
   let subscribed = false;
 
   fetch(API_BASE + '/')
@@ -172,47 +175,26 @@
     .then(() => { document.getElementById('apiStatus').textContent = '● Connected'; document.getElementById('apiStatus').className='api-status online'; })
     .catch(() => { document.getElementById('apiStatus').textContent = '● Offline'; document.getElementById('apiStatus').className='api-status offline'; });
 
-  document.getElementById('setupBtn').addEventListener('click', async () => {
-    const msg = document.getElementById('setupMsg');
-    msg.textContent = 'Setting up...';
-    msg.className = 'test-msg';
-    try {
-      // Create a creator + upload a video
-      const creatorEmail = 'creator_' + Date.now() + '@upload.com';
-      const creator = await (await fetch(API_BASE + '/api/auth/signup', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({firstName:'Priya', lastName:'Creator', email:creatorEmail, password:'pass123456'})
-      })).json();
-
-      const form = new FormData();
-      form.append('title', 'Cooking Tutorial — Live Demo');
-      form.append('type', 'video');
-      form.append('video', new Blob(['demo bytes']), 'demo.mp4');
-      const videoResp = await (await fetch(API_BASE + '/api/videos/upload', {
-        method:'POST', headers:{'Authorization':'Bearer ' + creator.token}, body: form
-      })).json();
-      currentVideoId = videoResp.video.id;
-
-      // Create a viewer account for you to interact as
-      const viewerEmail = 'viewer_' + Date.now() + '@upload.com';
-      const viewer = await (await fetch(API_BASE + '/api/auth/signup', {
-        method:'POST', headers:{'Content-Type':'application/json'},
-        body: JSON.stringify({firstName:'You', lastName:'Viewer', email:viewerEmail, password:'pass123456'})
-      })).json();
-      currentToken = viewer.token;
-
-      msg.textContent = '✓ Ready — video and account created for real.';
-      msg.className = 'test-msg ok';
-      document.getElementById('videoContent').style.display = 'block';
-      loadVideo();
-    } catch(err){
-      msg.textContent = 'Error: ' + err.message;
-      msg.className = 'test-msg err';
+  if (!currentVideoId) {
+    document.getElementById('notFoundMsg').style.display = 'block';
+  } else {
+    document.getElementById('videoContent').style.display = 'block';
+    if (!currentToken) {
+      document.getElementById('signInPrompt').style.display = 'block';
+      document.getElementById('commentInputRow').style.display = 'none';
+      document.getElementById('subBtn').textContent = 'Sign in to subscribe';
     }
-  });
+    loadVideo();
+  }
 
   async function loadVideo(){
-    const v = await (await fetch(API_BASE + '/api/videos/' + currentVideoId)).json();
+    const resp = await fetch(API_BASE + '/api/videos/' + currentVideoId);
+    if (!resp.ok) {
+      document.getElementById('videoContent').style.display = 'none';
+      document.getElementById('notFoundMsg').style.display = 'block';
+      return;
+    }
+    const v = await resp.json();
     document.getElementById('vTitle').textContent = v.title;
     document.getElementById('vStats').textContent = v.views + ' views • just now';
     document.getElementById('channelName').textContent = v.channel_name;
